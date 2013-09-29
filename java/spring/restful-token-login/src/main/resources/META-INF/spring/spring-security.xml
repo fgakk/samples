@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+  
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:security="http://www.springframework.org/schema/security"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+          http://www.springframework.org/schema/security
+          http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+
+
+	
+<security:http entry-point-ref="restfulEntry" create-session="stateless">
+	<security:custom-filter ref="restLogin" position="FORM_LOGIN_FILTER"/>
+	<security:custom-filter ref="tokenManagement" position="SESSION_MANAGEMENT_FILTER"/>
+	<security:intercept-url pattern="/rest/*" access="ROLE_USER"/>
+</security:http>
+<security:authentication-manager alias="restfulAuthenticationManager">
+    <security:authentication-provider ref="restfulAuthenticationProvider"/>
+  </security:authentication-manager>
+
+  <bean id="restfulAuthenticationProvider"
+      class="com.fga.examples.restful_token_login.authentication.RestfulAuthenticationProvider"/>
+
+<bean id="restLogin" class="com.fga.examples.restful_token_login.filter.RestLoginFilter">
+    <property name="authenticationManager" ref="restfulAuthenticationManager"></property>
+    <property name="authenticationSuccessHandler" ref="restfulAuthenticationSucessHandler"></property>
+</bean>
+<bean id="restfulAuthenticationSucessHandler" class="com.fga.examples.restful_token_login.authentication.RestAuthenticationSuccessHanlder"></bean>
+<bean id="restfulEntry" class="com.fga.examples.restful_token_login.authentication.RestfulAuthenticationEntryPoint"/>
+<bean id="tokenManagement" class="com.fga.examples.restful_token_login.filter.TokenManagementFilter"/>
+</beans>
+
+

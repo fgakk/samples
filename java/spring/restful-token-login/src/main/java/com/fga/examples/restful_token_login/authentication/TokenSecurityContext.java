@@ -3,6 +3,11 @@ package com.fga.examples.restful_token_login.authentication;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 
+/**
+ * Container token {@link com.fga.examples.restful_token_login.authentication.RestfulToken} Authentication object 
+ * @author gucluakkaya
+ *
+ */
 public class TokenSecurityContext implements SecurityContext {
 
 	

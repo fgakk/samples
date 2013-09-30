@@ -19,6 +19,11 @@ import org.springframework.web.filter.GenericFilterBean;
 import com.fga.examples.restful_token_login.authentication.TokenSecurityContext;
 import com.fga.examples.restful_token_login.service.AuthenticationService;
 
+/**
+ * Filter for token management replacing session management filter
+ * @author gucluakkaya
+ *
+ */
 public class TokenManagementFilter extends GenericFilterBean {
 
 	private static final Logger logger = LoggerFactory.getLogger(TokenManagementFilter.class);
@@ -47,6 +52,10 @@ public class TokenManagementFilter extends GenericFilterBean {
 	}
 
 	private SecurityContext loadSecurityContext(HttpServletRequest request) {
+		/*
+		 * For simplicity there is no security on token retrival or transfer since this is a template for
+		 * a stateless web service using spring security. Additional mechanism can be added for token security
+		 */
 		final String tokenId = request.getHeader("token");
 		logger.info("Token is " + tokenId);
 		return tokenId != null ? new TokenSecurityContext(

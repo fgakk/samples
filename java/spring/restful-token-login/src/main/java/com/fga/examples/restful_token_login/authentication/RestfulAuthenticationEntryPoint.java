@@ -11,6 +11,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 
+/**
+ * Custom entry point return 401 Unauthorized for any request without token
+ * @author gucluakkaya
+ *
+ */
 public class RestfulAuthenticationEntryPoint implements
 		AuthenticationEntryPoint {
 

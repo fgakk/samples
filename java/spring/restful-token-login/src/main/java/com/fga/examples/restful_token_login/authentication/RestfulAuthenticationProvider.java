@@ -11,14 +11,19 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import com.fga.examples.restful_token_login.domain.Member;
 import com.fga.examples.restful_token_login.domain.Token;
 import com.fga.examples.restful_token_login.domain.TokenGrantedAuthority;
 import com.fga.examples.restful_token_login.service.AuthenticationService;
 
-
+/**
+ * Authentication provider for token based request acceptiong usernamepasswordAuthenToken as Authentication
+ * and return token on the header in response upon Successful authentication using custom AuthenticationSuccessHanlder
+ * {@link com.fga.examples.restful_token_login.authentication.RestAuthenticationSuccessHanlder}
+ * @author gucluakkaya
+ *
+ */
 public class RestfulAuthenticationProvider implements AuthenticationProvider{
 
 	private static final Logger logger = LoggerFactory.getLogger(RestfulAuthenticationProvider.class);
@@ -39,9 +44,6 @@ public class RestfulAuthenticationProvider implements AuthenticationProvider{
 		
 		if (authentication instanceof UsernamePasswordAuthenticationToken){
 			result = this.authenticateForNewToken(authentication);
-		}else if (authentication instanceof RestfulToken){
-			logger.info("Token already exists");
-			result = authenticationService.saveAuthentication(authentication);
 		}
 		
 		return result;
@@ -51,7 +53,8 @@ public class RestfulAuthenticationProvider implements AuthenticationProvider{
 		
 		RestfulToken restfulToken = null;
 		logger.info("Getting new token");
-		if (authentication.getName().equals("testuser") && authentication.getCredentials().equals("a12345")){
+		Member member = authenticationService.getMember(authentication.getName(), authentication.getCredentials().toString());
+		if (member != null){
 			
 			String tokenId = UUID.randomUUID().toString();
 			List<TokenGrantedAuthority> authorities = new ArrayList<TokenGrantedAuthority>();

@@ -8,7 +8,11 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import com.fga.examples.restful_token_login.domain.Member;
 import com.fga.examples.restful_token_login.domain.TokenGrantedAuthority;
 
-
+/**
+ * Extended Authentication Object for transfering token information between filters
+ * @author gucluakkaya
+ *
+ */
 public class RestfulToken extends AbstractAuthenticationToken implements Serializable{
 
 	

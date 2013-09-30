@@ -89,6 +89,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 		}
 		return authentication;
 	}
+
+	@Override
+	public Member getMember(String username, String password) {
+		
+		return memberDao.findByNameAndPassword(username, password);
+	}
 	
 	
 

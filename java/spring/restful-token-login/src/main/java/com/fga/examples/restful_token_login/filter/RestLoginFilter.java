@@ -18,17 +18,22 @@ import org.springframework.security.web.authentication.AbstractAuthenticationPro
 
 import com.fga.examples.restful_token_login.authentication.RestfulToken;
 
+/**
+ * Filter for accepting login requests replacing form login filter
+ * @author gucluakkaya
+ *
+ */
 public class RestLoginFilter extends AbstractAuthenticationProcessingFilter{
 
-	private String loginUrl;
-	private boolean loginRequest;
+	
+	
 	public RestLoginFilter() {
 		super("/login");
-		this.loginUrl = "/login";
+		
 	}
-	protected RestLoginFilter(String defaultFilterProcessesUrl, String loginUrl) {
+	protected RestLoginFilter(String defaultFilterProcessesUrl) {
 		super(defaultFilterProcessesUrl);
-		this.loginUrl = loginUrl;
+		
 	}
 
 	
@@ -38,28 +43,16 @@ public class RestLoginFilter extends AbstractAuthenticationProcessingFilter{
 			IOException, ServletException {
 		logger.info("In the attempt authentication");
 		Authentication authRequest = null;
-		if (isLoginRequest(request, response)){
-			logger.info("Request for login");
-			String username = request.getParameter("username");
-			String password = request.getParameter("password");
-			
-			authRequest = new UsernamePasswordAuthenticationToken(username, password);
-		}else{
-			logger.info("Request with token");
-			authRequest = getTokenFromRequest(request, response);
-		}
+		logger.info("Request for login");
+		//Need to save password not in plain text but encrypted.Again for simplicity it is left as plain
+		String username = request.getParameter("username");
+		String password = request.getParameter("password");
+		authRequest = new UsernamePasswordAuthenticationToken(username, password);
 		
 		return this.getAuthenticationManager().authenticate(authRequest);
 	}
 	
-	private RestfulToken getTokenFromRequest(HttpServletRequest request,
-			HttpServletResponse response) {
-		
-		String token = request.getHeader("token");
-		
-		
-		return new RestfulToken(token);
-	}
+	
 	@Override
 	public void doFilter(ServletRequest req, ServletResponse res,
 			FilterChain chain) throws IOException, ServletException {
@@ -79,23 +72,15 @@ public class RestLoginFilter extends AbstractAuthenticationProcessingFilter{
         }
 		
 		SecurityContextHolder.getContext().setAuthentication(authResult);
-		//getRememberMeServices().loginSuccess(request, response, authResult);
+		
 
 		// Fire event
         if (this.eventPublisher != null) {
             eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(authResult, this.getClass()));
         }
         
-        if (!loginRequest){
-        	logger.info("Not login request");
-        	getSuccessHandler().onAuthenticationSuccess(request, response, authResult);
-        }else{
-        	logger.info("Login request");
-        	RestfulToken tokenInfo = (RestfulToken)authResult;
-        	response.setHeader("token", tokenInfo.getTokenId());
-        	response.setStatus(HttpServletResponse.SC_OK);
-        	
-        }
+       getSuccessHandler().onAuthenticationSuccess(request, response, authResult);
+        
         
 	}
 	
@@ -103,32 +88,8 @@ public class RestLoginFilter extends AbstractAuthenticationProcessingFilter{
 	 * Since service will not have any state every request needs to go 
 	 * through authentication
 	 */
-//	@Override
-//	protected boolean requiresAuthentication(HttpServletRequest request,
-//			HttpServletResponse response) {
-//		return true;
-//	}
+
 	
-	public String getLoginUrl() {
-		return loginUrl;
-	}
 	
-	protected boolean isLoginRequest(HttpServletRequest request, HttpServletResponse response){
-		
-		  String uri = request.getRequestURI();
-	        int pathParamIndex = uri.indexOf(';');
-
-	        if (pathParamIndex > 0) {
-	            // strip everything after the first semi-colon
-	            uri = uri.substring(0, pathParamIndex);
-	        }
-
-	        if ("".equals(request.getContextPath())) {
-	            return uri.endsWith(loginUrl);
-	        }
-
-	        loginRequest = uri.endsWith(request.getContextPath() + loginUrl);
-	        return this.loginRequest;
-	}
 
 }

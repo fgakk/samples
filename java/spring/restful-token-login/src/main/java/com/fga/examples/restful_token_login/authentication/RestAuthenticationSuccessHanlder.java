@@ -10,7 +10,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.util.StringUtils;
 
-
+/**
+ * Class extending SimpleUrlAuthenticationSuccessHandler working the same
+ * way as its parent with the difference of returing return value of 200 with
+ * token information instead send direct for restful requests
+ * @author gucluakkaya
+ *
+ */
 public class RestAuthenticationSuccessHanlder extends
 		SimpleUrlAuthenticationSuccessHandler {
 

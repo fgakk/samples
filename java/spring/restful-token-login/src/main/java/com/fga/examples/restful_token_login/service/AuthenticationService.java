@@ -6,9 +6,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
 import com.fga.examples.restful_token_login.authentication.RestfulToken;
+import com.fga.examples.restful_token_login.domain.Member;
 import com.fga.examples.restful_token_login.domain.Token;
 import com.fga.examples.restful_token_login.domain.TokenGrantedAuthority;
 
+/**
+ * Service for providing Token and Authentication management methods
+ * @author gucluakkaya
+ *
+ */
 public interface AuthenticationService {
 
 	public Token getTokenInfo(String id);
@@ -16,5 +22,6 @@ public interface AuthenticationService {
 	public Authentication saveAuthentication(Authentication authentication);
 	public GrantedAuthority getAuthority(String role);
 	public RestfulToken getAuthentication(String tokenId);
+	public Member getMember(String username, String password);
 
 }

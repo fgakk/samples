@@ -27,6 +27,7 @@
 			<tr>
 			<td><%= content.get('title')%></td>
 			<td><%= content.get('content')%></td>
+			<td><a href="#/edit/<%=content.id%>" class="btn">Edit</a></td>
 			<td></td>
 			</tr>
 			<% }); %>
@@ -35,13 +36,17 @@
 		</script>
 		<script type="text/template" id="content-edit-template">
 			<form class="edit-content-form">
-			<legend>Create Content</legend>
+			<legend><%= content ? 'Update' : 'Create'%> Content</legend>
 			<label>Title</label>
-			<input type="text" name="title"/>
+			<input type="text" name="title" value='<%=content ? content.get('title') : '' %>'/>
 			<label>Content</label>
-			<input type="text" name="content"/>
+			<input type="text" name="content" value='<%=content ? content.get('content') : '' %>'/>
 			<hr/>
-			<button type="submit" class="btn">Create</button>
+			<button type="submit" class="btn"><%=content ? 'Update': 'Create'%></button>
+			<% if(content) {%>
+				<input type="hidden" name="id" value=<%= content.id %> />
+				<button class="btn btn-danger delete">Delete</button>
+			<%};%>
 			</form>
 		</script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
@@ -94,12 +99,25 @@
 
 			var EditContent = Backbone.View.extend({
 				el : '.page',
-				render : function() {
-					var template = _.template($('#content-edit-template').html());
-					this.$el.html(template({}));
+				render : function(options) {
+					var that = this;
+					if(options.id){
+						that.content = new Content({id:options.id});
+						that.content.fetch({
+							success: function(content){
+								var template = _.template($('#content-edit-template').html());
+								that.$el.html(template({content:content}));
+							}
+						});
+					}else{
+						var template = _.template($('#content-edit-template').html());
+						this.$el.html(template({content:null}));
+					}
+					
 				},
 				events : {
-					'submit .edit-content-form' : 'saveContent'
+					'submit .edit-content-form' : 'saveContent',
+					'click .delete' : 'deleteContent'
 				},
 				saveContent : function(ev) {
 					var contentDetails = $(ev.currentTarget).serializeObject();
@@ -110,13 +128,22 @@
 						}
 					});
 					return false;
+				},
+				deleteContent : function(ev){
+					this.content.destroy({
+						success : function(){
+							router.navigate('', {trigger:true});
+						}
+					});
+					return false;
 				}
 			});
 
 			var Router = Backbone.Router.extend({
 				routes : {
 					'' : 'home',
-					'new' : 'editContent'
+					'new' : 'editContent',
+					'edit/:id': 'editContent'
 				}
 			});
 
@@ -127,8 +154,8 @@
 			router.on('route:home', function() {
 				contentList.render();
 			});
-			router.on('route:editContent', function() {
-				editContent.render();
+			router.on('route:editContent', function(id) {
+				editContent.render({id:id});
 			});
 			Backbone.history.start();
 		</script>

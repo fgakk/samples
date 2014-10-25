@@ -39,17 +39,19 @@ public class MainController {
 	}
 	
 	@RequestMapping(value=SINGLE_CONTENT_PATH, method=RequestMethod.PUT)
-	public void updateContent(@PathVariable(value=ID) String id, @RequestBody Content content, HttpServletResponse response) throws IOException{
+	public @ResponseBody Content updateContent(@PathVariable(value=ID) String id, @RequestBody Content content, HttpServletResponse response) throws IOException{
 		
+		Content result = null;
 		try{
 			Content existing = getContent(id);
 			existing.setContent(content.getContent());
 			existing.setTitle(content.getTitle());
-			contentRepository.save(existing);
+			result = contentRepository.save(existing);
 		}catch(ContentNotFoundException e){
 			response.sendError(HttpStatus.NOT_FOUND.value(), CONTENT_NOT_FOUND_ERROR);
 		}
-		 
+		return result;
+		
 		
 	}
 	
@@ -67,15 +69,19 @@ public class MainController {
 	}
 	
 	@RequestMapping(value=SINGLE_CONTENT_PATH, method=RequestMethod.DELETE)
-	public void deleteContent(@PathVariable(value=ID) String id, HttpServletResponse response) throws IOException{
+	public @ResponseBody boolean deleteContent(@PathVariable(value=ID) String id, HttpServletResponse response) throws IOException{
 		Content existing = null;
+		boolean result = false;
 		try {
 			existing = getContent(id);
 			contentRepository.delete(existing);
+			result = true;
 		} catch (ContentNotFoundException e) {
 			response.sendError(HttpStatus.NOT_FOUND.value(), CONTENT_NOT_FOUND_ERROR);
 		}
+		return result;
 	}
+	
 	
 	private Content getContent(String id) throws ContentNotFoundException{
 		Content existing = contentRepository.findOne(id);

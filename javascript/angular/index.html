@@ -1,0 +1,119 @@
+<!DOCTYPE HTML>
+<html lang="en" ng-app="contentApp">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>Angula JS Sample</title>
+		<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.1.1/css/bootstrap.min.css">
+	</head>
+	<body>
+		<div class="container" ng-controller='ContentCtrl'>
+			<h1>Content Manager</h1>
+			<br />
+			<div ng-view class="page"></div>
+		</div>
+		<script type="text/ng-template" id="content-list-template">
+			<a href="#/new" class="btn btn-primary">New Content</a>
+			<hr/>
+			<table class="table striped">
+				<thead>
+					<tr>
+						<th>Title</th>
+						<th>Content</th>
+						<th></th>
+					</tr>
+				</thead>
+				<tbody ng-repeat='content in contents'>
+					<tr>
+						<td>{{content.title}}</td>
+						<td>{{content.content}}</td>
+						<td><a href="#/edit/{{content.id}}" class="btn">Edit</a></td>
+						<td></td>
+					</tr>
+				</tbody>
+			</table>
+		</script>
+		<script type="text/ng-template" id="content-edit-template">
+			<form>
+				<legend>Update Content</legend>
+				<label>Title</label>
+				<input type="text" name="title" value='{{content.title}}' ng-model='content.title'/>
+				<label>Content</label>
+				<input type="text" name="content" value='{{content.content}}' ng-model='content.content'/>
+				<hr/>
+				<button ng-click='addUpdate()' class="btn">Update</button>
+				<input type="hidden" name="id" value='{{content.content}}' ng-model='content.id' />
+				<button ng-click='delete()' class="btn btn-danger delete">Delete</button>
+			</form>
+		</script>
+		<script type="text/ng-template" id="content-new-template">
+			<form ng-submit='addUpdate()'>
+				<legend>Create Content</legend>
+				<label>Title</label>
+				<input type="text" name="title" value='{{content.title}}' ng-model='content.title'/>
+				<label>Content</label>
+				<input type="text" name="content" value='{{content.content}}' ng-model='content.content'/>
+				<hr/>
+				<button "type="submit" class="btn">Create</button>
+			</form>
+		</script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.2.20/angular.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.2.20/angular-route.min.js"></script>
+		<script>
+			//$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+			//	options.url = 'http://localhost:8080' + options.url;
+			//});
+			var contentApp = angular.module('contentApp', ['ngRoute']);
+			contentApp.config(function($routeProvider) {
+				$routeProvider.
+					when('/', {
+						templateUrl: 'content-list-template',
+						controller: 'ContentCtrl'
+					}).
+					when('/new', {
+						templateUrl: 'content-new-template',
+						controller: 'ContentEditCtrl'
+					}).
+					when('/edit/:id', {
+						templateUrl: 'content-edit-template',
+						controller: 'ContentEditCtrl'
+					}).
+					otherwise({
+            			redirectTo: '/'
+          			});
+			});
+			contentApp.controller('ContentCtrl',function($scope,$http){
+				$http.get('http://localhost:8080/content').success(function(data){
+					$scope.contents = data;
+				});
+			});
+			contentApp.controller('ContentEditCtrl',['$scope','$routeParams','$http','$location',function(scope,routeParams,http,location){
+				if(routeParams.id){
+						http.get('http://localhost:8080/content/' + routeParams.id).success(function(data){
+						scope.content = data;
+					});	
+				}
+				
+				scope.addUpdate = function(){
+					var content = scope.content;
+					var id = content.id;
+					if (id){
+						http.put('http://localhost:8080/content/' + id, content).success(function(data){
+							location.path('/');
+						});
+					}else{
+						http.post('http://localhost:8080/content', content).success(function(data){
+							location.path('/');
+						});
+					}
+				};
+
+				scope.delete = function(){
+					var id = scope.content.id;
+					http.delete('http://localhost:8080/content/' + id).success(function(data){
+						location.path('/');
+					});
+				}
+			}]);
+		</script>
+	</body>
+</html>

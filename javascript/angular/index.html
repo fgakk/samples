@@ -59,9 +59,7 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.2.20/angular.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.2.20/angular-route.min.js"></script>
 		<script>
-			//$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
-			//	options.url = 'http://localhost:8080' + options.url;
-			//});
+			var baseUrl = 'http://localhost:8080/content';
 			var contentApp = angular.module('contentApp', ['ngRoute']);
 			contentApp.config(function($routeProvider) {
 				$routeProvider.
@@ -82,13 +80,13 @@
           			});
 			});
 			contentApp.controller('ContentCtrl',function($scope,$http){
-				$http.get('http://localhost:8080/content').success(function(data){
+				$http.get(baseUrl).success(function(data){
 					$scope.contents = data;
 				});
 			});
 			contentApp.controller('ContentEditCtrl',['$scope','$routeParams','$http','$location',function(scope,routeParams,http,location){
 				if(routeParams.id){
-						http.get('http://localhost:8080/content/' + routeParams.id).success(function(data){
+						http.get(baseUrl + '/' + routeParams.id).success(function(data){
 						scope.content = data;
 					});	
 				}
@@ -97,7 +95,7 @@
 					var content = scope.content;
 					var id = content.id;
 					if (id){
-						http.put('http://localhost:8080/content/' + id, content).success(function(data){
+						http.put(baseUrl + '/' + id, content).success(function(data){
 							location.path('/');
 						});
 					}else{
@@ -109,7 +107,7 @@
 
 				scope.delete = function(){
 					var id = scope.content.id;
-					http.delete('http://localhost:8080/content/' + id).success(function(data){
+					http.delete(baseUrl + '/' + id).success(function(data){
 						location.path('/');
 					});
 				}

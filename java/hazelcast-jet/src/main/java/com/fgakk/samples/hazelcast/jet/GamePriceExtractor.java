@@ -42,6 +42,10 @@ import java.util.stream.Stream;
  *                      ------
  *                      groupbykey
  *                       ------
+ *                        v
+ *                        ------
+ *                        filter
+ *                        ------
  *                          | sink |
  * </pre>
  * <p>
@@ -139,7 +143,19 @@ public class GamePriceExtractor {
         Vertex nameParser = dag.newVertex("nameExtractor", Processors.map(itemToNameMap));
 
         Vertex groupByKey = dag.newVertex("groupByKey", Processors.groupAndAccumulate(
-                Map.Entry<Long, String>::getKey, () -> "", (value, extractor) -> value.concat(extractor.getValue())));
+                Map.Entry<Long, String>::getKey, Game::new, (output, entry) ->
+                {
+                    //TODO find a better selection for money with a more complex regex pattern
+                    if(entry.getValue().contains("€") || entry.getValue().contains("Free")){
+                        output.setPrice(entry.getValue());
+                    }else{
+                        output.setName(entry.getValue());
+                    }
+                    return output;
+                }));
+
+        Vertex filter = dag.newVertex("filter", Processors.filter(GamePriceExtractor::hasName));
+
         Vertex sink = dag.newVertex("sink", Processors.writeList(PRICES));
 
         // Setting edges
@@ -147,18 +163,24 @@ public class GamePriceExtractor {
                 .edge(Edge.from(source, 1).to(nameParser.localParallelism(1)))
                 .edge(Edge.from(nameParser).to(groupByKey.localParallelism(1)))
                 .edge(Edge.from(priceParser).to(groupByKey.localParallelism(1), 1))
-                .edge(Edge.from(groupByKey).to(sink));
+                .edge(Edge.from(groupByKey).to(filter))
+                .edge(Edge.from(filter).to(sink));
         return dag;
     }
+
 
     private static boolean priceMatches(String str) {
         return pattern.matcher(str).matches();
     }
 
+
     private static boolean nameMatches(String str) {
         return namePattern.matcher(str).matches();
     }
 
+    private static boolean hasName(Map.Entry<Long, Game> item){
+        return item.getValue().getName() != null;
+    }
     private static Stream<String> getHtmlDoc() throws IOException {
         final ClassLoader cl = GamePriceExtractor.class.getClassLoader();
         final BufferedReader br = new BufferedReader(new InputStreamReader(cl.getResourceAsStream("steam.html")));

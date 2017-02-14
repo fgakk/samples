@@ -12,6 +12,10 @@ public class Game implements Serializable {
 
     private String price;
 
+
+    public Game() {
+    }
+
     public Game(final String name, final String price) {
         this.name = name;
         this.price = price;
@@ -22,8 +26,23 @@ public class Game implements Serializable {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public String getPrice() {
         return price;
+    }
+
+    public void setPrice(String price) {
+        this.price = price;
+    }
+
+    @Override
+    public String toString() {
+        return "Game{" +
+                "name='" + name + '\'' +
+                ", price='" + price + '\'' +
+                '}';
     }
 }

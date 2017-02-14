@@ -6,6 +6,8 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.jet.*;
 import com.hazelcast.jet.config.InstanceConfig;
 import com.hazelcast.jet.config.JetConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -26,10 +28,10 @@ import java.util.stream.Stream;
  * For the purpose of simplicity this sample does not cover complex use cases.
  * Following DAG will be implemented and used:
  * <pre>
- *                --------
- *               | source |
- *                --------
- *              /                |
+ *                     --------
+ *                    | source |
+ *                       --------
+ *                 /             \
  *             (line)         (line)
  *                |              |
  *                V              V
@@ -40,7 +42,7 @@ import java.util.stream.Stream;
  *                 (key, price)  (key, name)
  *                          V
  *                      ------
- *                      groupbykey
+ *                      groupByKey
  *                       ------
  *                        v
  *                        ------
@@ -54,15 +56,19 @@ import java.util.stream.Stream;
  * Source consists of html document content as stream.
  * </li>
  * <li>
- * html-parser will parse the text and extract html element
+ * price extractor will extract lines with price information
  * </li>
  * <li>
- * price extractor will try to find an information about price. If there is
- * one it will try to find the name of game and to construct an serializable {@code Game}
- * object.
+ * name extractor will extract the name information from the line.
  * </li>
  * <li>
- * At sink the data will be written to a json file.
+ * groupByKey vertex combines the map entries with the same key and produce a game object with price and game fields
+ * </li>
+ * <li>
+ * <li>
+ * filter will exclude game data without name.
+ * </li>
+ * At sink the data will be written to in-memory list.
  * </li>
  * Created by fgakk on 07/02/17.
  */
@@ -76,13 +82,15 @@ public class GamePriceExtractor {
 
     private static final long[] initial = {0L, 0L};
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(GamePriceExtractor.class);
+
     private JetInstance jet;
 
     public static void main(String[] args) {
         try {
             new GamePriceExtractor().go();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Problem occurred while running GamePriceExtractor", e);
         }
     }
 
@@ -91,24 +99,23 @@ public class GamePriceExtractor {
             setup();
             long start = System.nanoTime();
             jet.newJob(buildDAG()).execute().get();
-            System.out.print("done in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + " milliseconds.");
-            printResult();
+            LOGGER.info("done in {} milliseconds.", TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+            logResult();
         } finally {
             Jet.shutdownAll();
         }
     }
 
-    private void printResult() {
+    private void logResult() {
         final int limit = 100;
         final List<Map.Entry> prices = jet.getList(PRICES);
-        System.out.format(" Number of entries are %d %n", prices.size());
-        System.out.format(" Top %d entries are:%n", limit);
-
-        System.out.println("/-------+---------\\");
-        System.out.println("| Prices  as Html Element  |");
-        System.out.println("|-------+---------|");
-        prices.forEach(e -> System.out.format("|Key %d | %6s |%n", e.getKey(), e.getValue()));
-        System.out.println("\\-------+---------/");
+        LOGGER.info(" Number of entries are {}", prices.size());
+        LOGGER.info(" Top {} entries are: ", limit);
+    
+        LOGGER.info("| Prices  as Html Element  |");
+        
+        prices.forEach(e -> LOGGER.info("|Key {} | {} |", e.getKey(), e.getValue()));
+        
     }
 
     private void setup() throws IOException {
@@ -131,10 +138,10 @@ public class GamePriceExtractor {
 
 
         Distributed.Function<String, Map.Entry<Long, String>> itemToNameMap = (str) ->
-            extractInfo(GamePriceExtractor::nameMatches, str, 0);
+                extractInfo(GamePriceExtractor::nameMatches, str, 0);
 
         Distributed.Function<String, Map.Entry<Long, String>> itemToPriceMap = (str) ->
-            extractInfo(GamePriceExtractor::priceMatches, str, 1);
+                extractInfo(GamePriceExtractor::priceMatches, str, 1);
 
         Vertex source = dag.newVertex("source", Processors.readList(GAMES_DOCUMENT)).localParallelism(1);
 
@@ -146,9 +153,9 @@ public class GamePriceExtractor {
                 Map.Entry<Long, String>::getKey, Game::new, (output, entry) ->
                 {
                     //TODO find a better selection for money with a more complex regex pattern
-                    if(entry.getValue().contains("€") || entry.getValue().contains("Free")){
+                    if (entry.getValue().contains("€") || entry.getValue().contains("Free")) {
                         output.setPrice(entry.getValue());
-                    }else{
+                    } else {
                         output.setName(entry.getValue());
                     }
                     return output;
@@ -178,16 +185,17 @@ public class GamePriceExtractor {
         return namePattern.matcher(str).matches();
     }
 
-    private static boolean hasName(Map.Entry<Long, Game> item){
+    private static boolean hasName(Map.Entry<Long, Game> item) {
         return item.getValue().getName() != null;
     }
+
     private static Stream<String> getHtmlDoc() throws IOException {
         final ClassLoader cl = GamePriceExtractor.class.getClassLoader();
         final BufferedReader br = new BufferedReader(new InputStreamReader(cl.getResourceAsStream("steam.html")));
         return br.lines().onClose(() -> close(br));
     }
 
-    private static Map.Entry extractInfo(Function<String, Boolean> checker, String str, int counter){
+    private static Map.Entry extractInfo(Function<String, Boolean> checker, String str, int counter) {
         if (checker.apply(str)) {
             int idx = str.indexOf("</");
             String extractedPrice = idx > -1 ? str.substring(str.indexOf('>') + 1, idx) : str.substring(str.indexOf('>') + 1);

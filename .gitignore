@@ -1,0 +1,7 @@
+#Intellij Related
+.idea
+*.iml
+
+#Java Related
+target
+.class
